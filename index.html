@@ -1,13 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Daily Space Image</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --black: #080a0f;
+      --deep: #0d1117;
+      --panel: #111620;
+      --border: rgba(255,255,255,0.07);
+      --gold: #c9a84c;
+      --gold-dim: rgba(201,168,76,0.15);
+      --white: #f0eeea;
+      --muted: #7a8399;
+    }
 
-Product Manager working on Space Programs at Anduril.
-LINKEDIN →
-NASA · ASTRONOMY PICTURE OF THE DAY
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 0 80px;
+      overflow-x: hidden;
+    }
 
-FETCHING TODAY'S IMAGE
+    /* ── Header ── */
+    header {
+      width: 100%;
+      padding: 36px 48px 24px;
+      display: flex;
+      align-items: baseline;
+      gap: 18px;
+      border-bottom: 1px solid var(--border);
+      animation: fadeDown 0.8s ease both;
+    }
 
+    .site-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 300;
+      letter-spacing: 0.06em;
+      color: var(--white);
+    }
 
-STOIC · DAILY REFLECTION
+    .date-badge {
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-left: auto;
+    }
 
+    /* ── About ── */
+    .about-section {
+      width: 100%;
+      border-bottom: 1px solid var(--border);
+      animation: fadeDown 0.8s ease 0.1s both;
+    }
 
-Built with curiosity
+    .about-card {
+      padding: 20px 48px 24px;
+    }
+
+    .about-card p {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--white);
+      line-height: 1.6;
+    }
+
+    .about-card a {
+      display: inline-block;
+      margin-top: 20px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(201,168,76,0.3);
+      padding-bottom: 2px;
+      transition: border-color 0.2s;
+    }
+
+    .about-card a:hover {
+      border-color: var(--gold);
+    }
+
+    /* ── Main Card ── */
+    main {
+      width: min(900px, 94vw);
+      margin-top: 56px;
+      animation: fadeUp 1s ease 0.2s both;
+    }
+
+    .label {
+      font-size: 0.65rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Image wrapper */
+    .image-frame {
+      position: relative;
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .image-frame::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(160deg, rgba(201,168,76,0.04) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    #apod-image {
+      width: 100%;
+      display: block;
+      max-height: 600px;
+      object-fit: cover;
+      transition: transform 0.6s ease;
+    }
+
+    .image-frame:hover #apod-image {
+      transform: scale(1.015);
+    }
+
+    #apod-video-container {
+      display: none;
+      width: 100%;
+      aspect-ratio: 16/9;
+    }
+    #apod-video-container iframe {
+      width: 100%; height: 100%; border: none;
+    }
+
+    /* Info bar */
+    .info-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 22px 0 0;
+      flex-wrap: wrap;
+    }
+
+    #apod-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 300;
+      line-height: 1.2;
+      color: var(--white);
+    }
+
+    #apod-credit {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      white-space: nowrap;
+      padding-top: 6px;
+    }
+
+    /* Loading state */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 320px;
+      gap: 18px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 1px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    /* Error */
+    .error-box {
+      padding: 40px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.8;
+    }
+    .error-box strong { color: var(--white); display: block; margin-bottom: 8px; font-size: 1rem; }
+
+    /* Animations */
+    @keyframes fadeDown { from { opacity:0; transform: translateY(-14px); } to { opacity:1; transform: none; } }
+    @keyframes fadeUp   { from { opacity:0; transform: translateY(20px);  } to { opacity:1; transform: none; } }
+    @keyframes spin     { to { transform: rotate(360deg); } }
+
+    /* ── Quote Section ── */
+    .quote-section {
+      width: min(900px, 94vw);
+      margin: 56px auto 0;
+      animation: fadeUp 1s ease 0.5s both;
+    }
+
+    .quote-card {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 48px 52px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quote-card::before {
+      content: '\201C';
+      position: absolute;
+      top: -10px;
+      left: 32px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10rem;
+      color: var(--gold-dim);
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .quote-text {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+      font-weight: 300;
+      font-style: italic;
+      line-height: 1.6;
+      color: var(--white);
+      position: relative;
+      z-index: 1;
+    }
+
+    .quote-author {
+      margin-top: 24px;
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      header { padding: 24px 20px 18px; flex-wrap: wrap; }
+      .date-badge { width: 100%; margin-left: 0; }
+      .quote-card { padding: 32px 28px; }
+      .about-card { padding: 16px 20px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="site-title" id="site-date"></div>
+    <div class="date-badge" id="today-date"></div>
+  </header>
+
+  <section class="about-section">
+    <div class="about-card">
+      <p>Product Manager working on Space Programs at Anduril.</p>
+      <a href="https://www.linkedin.com/in/tobias-armour-a5346b75/" target="_blank" rel="noopener">LinkedIn &rarr;</a>
+    </div>
+  </section>
+
+  <main>
+    <div class="label">NASA · Astronomy Picture of the Day</div>
+
+    <div class="image-frame" id="image-frame">
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <span>Fetching today's image</span>
+      </div>
+      <img id="apod-image" alt="NASA Astronomy Picture of the Day" style="display:none;" />
+      <div id="apod-video-container"></div>
+    </div>
+
+    <div class="info-bar">
+      <div id="apod-title"></div>
+      <div id="apod-credit"></div>
+    </div>
+  </main>
+
+  <section class="quote-section">
+    <div class="label">Stoic · Daily Reflection</div>
+    <div class="quote-card">
+      <div class="quote-text" id="quote-text"></div>
+      <div class="quote-author" id="quote-author"></div>
+    </div>
+  </section>
+
+  <footer style="width:100%;text-align:center;padding:24px;color:var(--muted);font-size:0.75rem;letter-spacing:0.15em;border-top:1px solid var(--border);margin-top:auto;font-style:italic;font-family:'Share Tech Mono',monospace;">
+    Built with curiosity
+  </footer>
+
+  <script>
+    // Display today's date
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    document.getElementById('site-date').textContent = `${dd}.${mm}.${yyyy}`;
+
+    const dateEl = document.getElementById('today-date');
+    dateEl.textContent = now.toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    // Fetch from NASA APOD API
+    async function loadAPOD() {
+      const API_KEY = 'LmOpaZVEPNLdNoehcwe6vBMFB0M2Z0bfu1HSC83m';
+      const url = `https://api.nasa.gov/planetary/apod?api_key=${API_KEY}`;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('apod-title').textContent = data.title || '';
+
+        if (data.copyright) {
+          document.getElementById('apod-credit').textContent =
+            `© ${data.copyright.replace(/\n/g, ' ')}`;
+        }
+
+        if (data.media_type === 'video') {
+          const vc = document.getElementById('apod-video-container');
+          vc.style.display = 'block';
+          const isEmbed = /youtube\.com|youtu\.be|vimeo\.com/.test(data.url);
+          if (isEmbed) {
+            vc.innerHTML = `<iframe src="${data.url}" allowfullscreen></iframe>`;
+          } else {
+            vc.innerHTML = `<video src="${data.url}" controls autoplay muted loop style="width:100%;height:100%;"></video>`;
+          }
+        } else {
+          const img = document.getElementById('apod-image');
+          img.src = data.hdurl || data.url;
+          img.alt = data.title;
+          img.style.display = 'block';
+        }
+
+      } catch (err) {
+        document.getElementById('loading').innerHTML = `
+          <div class="error-box">
+            <strong>Could not load today's image</strong>
+            Check your internet connection or API key.<br/>
+            Error: ${err.message}
+          </div>`;
+      }
+    }
+
+    loadAPOD();
+
+    // Daily stoic/mindfulness quotes
+    const quotes = [
+      { text: "You have power over your mind, not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius" },
+      { text: "The happiness of your life depends upon the quality of your thoughts.", author: "Marcus Aurelius" },
+      { text: "Very little is needed to make a happy life; it is all within yourself, in your way of thinking.", author: "Marcus Aurelius" },
+      { text: "Waste no more time arguing about what a good man should be. Be one.", author: "Marcus Aurelius" },
+      { text: "When you arise in the morning, think of what a precious privilege it is to be alive.", author: "Marcus Aurelius" },
+      { text: "Accept the things to which fate binds you, and love the people with whom fate brings you together.", author: "Marcus Aurelius" },
+      { text: "The best revenge is to be unlike him who performed the injury.", author: "Marcus Aurelius" },
+      { text: "If it is not right, do not do it; if it is not true, do not say it.", author: "Marcus Aurelius" },
+      { text: "Confine yourself to the present.", author: "Marcus Aurelius" },
+      { text: "Never esteem anything as of advantage to you that will make you break your word or lose your self-respect.", author: "Marcus Aurelius" },
+      { text: "The object of life is not to be on the side of the majority, but to escape finding oneself in the ranks of the insane.", author: "Marcus Aurelius" },
+      { text: "Loss is nothing else but change, and change is nature's delight.", author: "Marcus Aurelius" },
+      { text: "It is not death that a man should fear, but he should fear never beginning to live.", author: "Marcus Aurelius" },
+      { text: "Do not indulge in dreams of what you have not, but count the blessings actually present.", author: "Marcus Aurelius" },
+      { text: "The impediment to action advances action. What stands in the way becomes the way.", author: "Marcus Aurelius" },
+      { text: "He who lives in harmony with himself lives in harmony with the universe.", author: "Marcus Aurelius" },
+      { text: "Our life is what our thoughts make it.", author: "Marcus Aurelius" },
+      { text: "Wherever there is a human being, there is an opportunity for a kindness.", author: "Seneca" },
+      { text: "It is not that I am brave, it is just that I am busy.", author: "Seneca" },
+      { text: "Begin at once to live, and count each separate day as a separate life.", author: "Seneca" },
+      { text: "We suffer more in imagination than in reality.", author: "Seneca" },
+      { text: "Luck is what happens when preparation meets opportunity.", author: "Seneca" },
+      { text: "If you want to know what a man's character is really like, give him power.", author: "Seneca" },
+      { text: "It is not the man who has too little, but the man who craves more, that is poor.", author: "Seneca" },
+      { text: "Hurry up and live. Consider how much time has been taken from you.", author: "Seneca" },
+      { text: "Throw me to the wolves and I will return leading the pack.", author: "Seneca" },
+      { text: "Omnia aliena sunt, tempus tantum nostrum est. All things are external; time alone belongs to us.", author: "Seneca" },
+      { text: "Vindica te tibi. Claim yourself for yourself.", author: "Seneca" },
+      { text: "The greatest blessings of mankind are within us and within our reach.", author: "Seneca" },
+      { text: "Make the best use of what is in your power, and take the rest as it happens.", author: "Epictetus" },
+      { text: "He is a wise man who does not grieve for the things which he has not, but rejoices for those which he has.", author: "Epictetus" },
+      { text: "First say to yourself what you would be; and then do what you have to do.", author: "Epictetus" },
+      { text: "Men are disturbed not by the things which happen, but by the opinions about the things.", author: "Epictetus" },
+      { text: "No man is free who is not master of himself.", author: "Epictetus" },
+      { text: "Seek not the good in external things; seek it in yourself.", author: "Epictetus" },
+      { text: "If you want to improve, be content to be thought foolish and stupid.", author: "Epictetus" },
+      { text: "We cannot choose our external circumstances, but we can always choose how we respond to them.", author: "Epictetus" },
+      { text: "Nothing great is created suddenly, any more than a bunch of grapes or a fig.", author: "Epictetus" },
+      { text: "Wealth consists not in having great possessions, but in having few wants.", author: "Epictetus" },
+      { text: "Don't explain your philosophy. Embody it.", author: "Epictetus" },
+      { text: "The key is to keep company only with people who uplift you, whose presence calls forth your best.", author: "Epictetus" },
+      { text: "Only the educated are free.", author: "Epictetus" },
+      { text: "Know, first, who you are, and then adorn yourself accordingly.", author: "Epictetus" },
+      { text: "Do not seek for things to happen the way you want them to; but wish for things to happen the way they are.", author: "Epictetus" },
+      { text: "The more we value things outside our control, the less control we have.", author: "Epictetus" },
+      { text: "It's not what happens to you, but how you react to it that matters.", author: "Epictetus" },
+      { text: "In prosperity, it is very easy to find a friend; but in adversity, it is the most difficult of all things.", author: "Epictetus" },
+      { text: "Freedom is the only worthy goal in life. It is won by disregarding things that lie beyond our control.", author: "Epictetus" },
+      { text: "To be a philosopher is not merely to have subtle thoughts, nor even to found a school, but so to love wisdom as to live according to its dictates.", author: "Henry David Thoreau" },
+      { text: "Go confidently in the direction of your dreams. Live the life you have imagined.", author: "Henry David Thoreau" },
+      { text: "Not all those who wander are lost.", author: "J.R.R. Tolkien" },
+      { text: "I am not afraid of storms, for I am learning how to sail my ship.", author: "Louisa May Alcott" },
+      { text: "In the middle of every difficulty lies opportunity.", author: "Albert Einstein" },
+      { text: "A person who never made a mistake never tried anything new.", author: "Albert Einstein" },
+      { text: "The measure of intelligence is the ability to change.", author: "Albert Einstein" },
+      { text: "Logic will get you from A to B. Imagination will take you everywhere.", author: "Albert Einstein" },
+      { text: "Life is like riding a bicycle. To keep your balance, you must keep moving.", author: "Albert Einstein" },
+      { text: "The true sign of intelligence is not knowledge but imagination.", author: "Albert Einstein" },
+      { text: "Strive not to be a success, but rather to be of value.", author: "Albert Einstein" },
+      { text: "The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.", author: "Albert Einstein" },
+      { text: "Two things are infinite: the universe and human stupidity; and I'm not sure about the universe.", author: "Albert Einstein" },
+      { text: "There are only two ways to live your life. One is as though nothing is a miracle. The other is as though everything is a miracle.", author: "Albert Einstein" },
+      { text: "It is better to be hated for what you are than to be loved for what you are not.", author: "André Gide" },
+      { text: "The only journey is the journey within.", author: "Rainer Maria Rilke" },
+      { text: "I want to be with those who know secret things or else alone.", author: "Rainer Maria Rilke" },
+      { text: "Perhaps all the dragons in our lives are princesses who are only waiting to see us act, just once, with beauty and courage.", author: "Rainer Maria Rilke" },
+      { text: "Everything is blooming most recklessly; if it were voices instead of colors, there would be an unbelievable shrieking into the heart of the night.", author: "Rainer Maria Rilke" },
+      { text: "Be patient toward all that is unsolved in your heart and try to love the questions themselves.", author: "Rainer Maria Rilke" },
+      { text: "The future enters into us, in order to transform itself in us, long before it happens.", author: "Rainer Maria Rilke" },
+      { text: "Once the realization is accepted that even between the closest human beings infinite distances continue, a wonderful living side by side can grow.", author: "Rainer Maria Rilke" },
+      { text: "Perhaps all the dragons in our lives are princesses who are only waiting to see us act.", author: "Rainer Maria Rilke" },
+      { text: "The quieter you become, the more you can hear.", author: "Ram Dass" },
+      { text: "We're all just walking each other home.", author: "Ram Dass" },
+      { text: "The most important aspect of love is not in giving or the receiving: it's in the being.", author: "Ram Dass" },
+      { text: "It is important to expect nothing, to take every experience, including the negative ones, as merely steps on the path.", author: "Ram Dass" },
+      { text: "Treat everyone you meet like God in drag.", author: "Ram Dass" },
+      { text: "The art of living is neither careless drifting on the one hand nor fearful clinging to the past on the other.", author: "Alan Watts" },
+      { text: "No valid plans for the future can be made by those who have no capacity for living now.", author: "Alan Watts" },
+      { text: "The only way to make sense out of change is to plunge into it, move with it, and join the dance.", author: "Alan Watts" },
+      { text: "This is the real secret of life: to be completely engaged with what you are doing in the here and now.", author: "Alan Watts" },
+      { text: "You are under no obligation to be the same person you were five minutes ago.", author: "Alan Watts" },
+      { text: "Try to imagine what it will be like to go to sleep and never wake up. Now try to imagine what it was like to wake up having never gone to sleep.", author: "Alan Watts" },
+      { text: "Problems that remain persistently insoluble should always be suspected as questions asked in the wrong way.", author: "Alan Watts" },
+      { text: "Muddy water is best cleared by leaving it alone.", author: "Alan Watts" },
+      { text: "The resistance to the unpleasant situation is the root of suffering.", author: "Alan Watts" },
+      { text: "I have realized that the past and future are real illusions, that they exist in the present, which is what there is and all there is.", author: "Alan Watts" },
+      { text: "If you cannot trust yourself, you cannot even trust your mistrust of yourself.", author: "Alan Watts" },
+      { text: "The most dangerous risk of all: the risk of spending your life not doing what you want on the bet you can buy yourself the freedom to do it later.", author: "Alan Watts" },
+      { text: "In knowing nothing, peace of mind is possible.", author: "Alan Watts" },
+      { text: "Zen does not confuse spirituality with thinking about God while one is peeling potatoes. Zen spirituality is just to peel the potatoes.", author: "Alan Watts" },
+      { text: "You are always in the right place at the right time, even if it doesn't look like it.", author: "Unknown" },
+      { text: "The cave you fear to enter holds the treasure you seek.", author: "Joseph Campbell" },
+      { text: "Life has no meaning. Each of us has meaning and we bring it to life. It is a waste to be asking the question when you are the answer.", author: "Joseph Campbell" },
+      { text: "Follow your bliss and the universe will open doors for you where there were only walls.", author: "Joseph Campbell" },
+      { text: "The privilege of a lifetime is being who you are.", author: "Joseph Campbell" },
+      { text: "We must be willing to let go of the life we planned so as to have the life that is waiting for us.", author: "Joseph Campbell" },
+      { text: "Your sacred space is where you can find yourself over and over again.", author: "Joseph Campbell" },
+      { text: "The hero's journey always begins with the call. One way or another, a guide must come to say, 'Look, you're in Sleepy Land. Wake. Come on a trip.'", author: "Joseph Campbell" },
+      { text: "The goal of life is to make your heartbeat match the beat of the universe.", author: "Joseph Campbell" },
+      { text: "Find a place inside where there's joy, and the joy will burn out the pain.", author: "Joseph Campbell" },
+      { text: "If you can see your path laid out in front of you step by step, you know it's not your path.", author: "Joseph Campbell" },
+      { text: "The big question is whether you are going to be able to say a hearty yes to your adventure.", author: "Joseph Campbell" },
+      { text: "Opportunities to find deeper powers within ourselves come when life seems most challenging.", author: "Joseph Campbell" },
+      { text: "Participate joyfully in the sorrows of the world. We cannot cure the world of sorrows, but we can choose to live in joy.", author: "Joseph Campbell" },
+      { text: "It is by going down into the abyss that we recover the treasures of life.", author: "Joseph Campbell" },
+      { text: "The cosmos is within us. We are made of star-stuff. We are a way for the universe to know itself.", author: "Carl Sagan" },
+      { text: "Somewhere, something incredible is waiting to be known.", author: "Carl Sagan" },
+      { text: "The universe is a pretty big place. If it's just us, seems like an awful waste of space.", author: "Carl Sagan" },
+      { text: "For small creatures such as we the vastness is bearable only through love.", author: "Carl Sagan" },
+      { text: "We are all star stuff.", author: "Carl Sagan" },
+      { text: "Science is not only compatible with spirituality; it is a profound source of spirituality.", author: "Carl Sagan" },
+      { text: "Every one of us is, in the cosmic perspective, precious. If a human disagrees with you, let him live.", author: "Carl Sagan" },
+      { text: "We make our world significant by the courage of our questions and the depth of our answers.", author: "Carl Sagan" },
+      { text: "Extinction is the rule. Survival is the exception.", author: "Carl Sagan" },
+      { text: "One of the great commandments of science is: Mistrust arguments from authority.", author: "Carl Sagan" },
+      { text: "Absence of evidence is not evidence of absence.", author: "Carl Sagan" },
+      { text: "Our planet is a lonely speck in the great enveloping cosmic dark.", author: "Carl Sagan" },
+      { text: "The sky calls to us. If we do not destroy ourselves, we will one day venture to the stars.", author: "Carl Sagan" },
+      { text: "Books are the key to understanding the world.", author: "Carl Sagan" },
+      { text: "We are a way for the cosmos to know itself.", author: "Carl Sagan" },
+      { text: "Do not feel lonely; the entire universe is inside you.", author: "Rumi" },
+      { text: "Let yourself be drawn by the stronger pull of that which you truly love.", author: "Rumi" },
+      { text: "Live life as if everything is rigged in your favor.", author: "Rumi" },
+      { text: "I searched for God and found only myself. I searched for myself and found only God.", author: "Rumi" },
+      { text: "Either give me more wine or leave me alone.", author: "Rumi" },
+      { text: "There is a voice that doesn't use words. Listen.", author: "Rumi" },
+      { text: "Be grateful for whoever comes, because each has been sent as a guide from beyond.", author: "Rumi" },
+      { text: "The universe is not outside of you. Look inside yourself; everything that you want, you already are.", author: "Rumi" },
+      { text: "Respond to every call that excites your spirit.", author: "Rumi" },
+      { text: "Inside you there's an artist you don't know about.", author: "Rumi" },
+      { text: "Close your eyes. Fall in love. Stay there.", author: "Rumi" },
+      { text: "Out beyond ideas of wrongdoing and rightdoing, there is a field. I'll meet you there.", author: "Rumi" },
+      { text: "What you seek is seeking you.", author: "Rumi" },
+      { text: "Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself.", author: "Rumi" },
+      { text: "Raise your words, not voice. It is rain that grows flowers, not thunder.", author: "Rumi" },
+      { text: "The wound is the place where the light enters you.", author: "Rumi" },
+      { text: "Ignore those that make you fearful and sad, that degrade you back towards disease and death.", author: "Rumi" },
+      { text: "Start a huge, foolish project, like Noah. It makes absolutely no difference what people think of you.", author: "Rumi" },
+      { text: "When you do things from your soul, you feel a river moving in you, a joy.", author: "Rumi" },
+      { text: "Sell your cleverness and buy bewilderment.", author: "Rumi" },
+      { text: "Try not to resist the changes that come your way. Instead, let life live through you.", author: "Rumi" },
+      { text: "Let the beauty of what you love be what you do.", author: "Rumi" },
+      { text: "Be a lamp, or a lifeboat, or a ladder. Help someone's soul heal.", author: "Rumi" },
+      { text: "Run from what's comfortable. Forget safety. Live where you fear to live.", author: "Rumi" },
+      { text: "Put your thoughts to sleep, do not let them cast a shadow over the moon of your heart.", author: "Rumi" },
+    ];
+
+    function loadQuote() {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const diff = now - start;
+      const oneDay = 1000 * 60 * 60 * 24;
+      const dayOfYear = Math.floor(diff / oneDay);
+      const q = quotes[dayOfYear % quotes.length];
+      document.getElementById('quote-text').textContent = q.text;
+      document.getElementById('quote-author').textContent = '— ' + q.author;
+    }
+
+    loadQuote();
+  </script>
+
+</body>
+</html>
